@@ -1,0 +1,18 @@
+{
+    "123456789": {
+        "name": "Soya Meat",
+        "price": 40.0
+    },
+    "W-123456789": {
+        "name": "Red Rice",
+        "price": 200.0
+    },
+    "234567891": {
+        "name": "Soap",
+        "price": 130.0
+    },
+    "345678912": {
+        "name": "Biscuits",
+        "price": 240.0
+    }
+}
