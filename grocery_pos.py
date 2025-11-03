@@ -81,7 +81,7 @@ def save_shop_name(name):
 # 3. Run the app ONCE to update the config file.
 # 4. Re-comment the lines out to prevent overwriting on future launches.
 
-# new_shop_name = "Food Mart" 
+# new_shop_name = "" 
 # save_shop_name(new_shop_name)
 
 #####################################
@@ -105,7 +105,7 @@ class GroceryPOSApp(tk.Tk):
     """Main application container."""
     def __init__(self):
         super().__init__()
-        self.title("Simple Grocery POS System")
+        self.title("Grocery POS System")
         self.geometry("1000x700")
 
         # The StringVar ensures name changes update automatically across all frames
@@ -170,11 +170,11 @@ class POSFrame(tk.Frame):
         nav_frame.pack(side="top", fill="x")
         
         # Shop Name is a static label
-        shop_name_frame = tk.Frame(nav_frame, bg="#34495e")
-        shop_name_frame.pack(side="left", padx=10, pady=5)
+        # shop_name_frame = tk.Frame(nav_frame, bg="#34495e")
+        # shop_name_frame.pack(side="left", padx=10, pady=5)
         
-        tk.Label(shop_name_frame, textvariable=self.controller.shop_name_var, 
-                 font=("Arial", 12, "bold"), fg="#e0e0e0", bg="#34495e").pack(side="left", padx=5)
+        # tk.Label(shop_name_frame, textvariable=self.controller.shop_name_var, 
+        #          font=("Arial", 12, "bold"), fg="#e0e0e0", bg="#34495e").pack(side="left", padx=5)
         
         # Original Title
         tk.Label(nav_frame, text="Billing Screen", font=("Arial", 16, "bold"), fg="white", bg="#34495e").pack(side="left", padx=10, pady=10)
@@ -239,12 +239,13 @@ class POSFrame(tk.Frame):
         weight_area = tk.Frame(cart_frame, bg="white")
         weight_area.grid(row=1, column=0, sticky="ew", padx=10, pady=5)
         
-        tk.Label(weight_area, text="Weighted Barcode:", font=("Arial", 10), bg="white").pack(side="left")
-        self.weight_barcode_entry = ttk.Entry(weight_area, font=("Arial", 10), width=15)
+        tk.Label(weight_area, text="Weighted Barcode:", font=("Arial", 12), bg="white").pack(side="left")
+        self.weight_barcode_entry = ttk.Entry(weight_area, font=("Arial", 12), width=15)
         self.weight_barcode_entry.pack(side="left", padx=(5,0))
+        self.weight_barcode_entry.insert(0, "W-")
         
-        tk.Label(weight_area, text="Weight (kg):", font=("Arial", 10), bg="white").pack(side="left", padx=(10,0))
-        self.weight_entry = ttk.Entry(weight_area, font=("Arial", 10), width=10)
+        tk.Label(weight_area, text="Weight (kg):", font=("Arial", 12), bg="white").pack(side="left", padx=(10,0))
+        self.weight_entry = ttk.Entry(weight_area, font=("Arial", 12), width=5)
         self.weight_entry.pack(side="left", padx=(5,0))
         
         ttk.Button(weight_area, text="Add Weight", command=self.add_weighted_item).pack(side="left", padx=5)
@@ -502,14 +503,14 @@ class POSFrame(tk.Frame):
         receipt_lines = []
         shop_name = self.controller.shop_name_var.get().upper()
         
-        receipt_lines.append("=" * 40)
+        receipt_lines.append("=" * 41)
         receipt_lines.append(f" {shop_name:^38}") 
-        receipt_lines.append("=" * 40)
+        receipt_lines.append("=" * 41)
         receipt_lines.append(f"Date/Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        receipt_lines.append("-" * 40)
+        receipt_lines.append("-" * 41)
         
         receipt_lines.append(f"{'QTY':<8}{'ITEM':<24}{'AMOUNT':>8}")
-        receipt_lines.append("-" * 40)
+        receipt_lines.append("-" * 41)
         
         for item in self.cart.values():
             qty_display = f"{item['quantity']:.0f}" if not item['is_weighted'] else f"{item['quantity']:.2f} kg"
@@ -518,20 +519,22 @@ class POSFrame(tk.Frame):
             line = f"{qty_display:<8}{item['name'][:24]:<24}{amount_display:>8}"
             receipt_lines.append(line)
             
-        receipt_lines.append("-" * 40)
+        receipt_lines.append("-" * 41)
         
         # Currency change reflected here
         receipt_lines.append(f"{'Subtotal:':<30}{CURRENCY_SYMBOL}{self.subtotal:>8.2f}")
         receipt_lines.append(f"Discount ({discount_percent:.0f}%): -{CURRENCY_SYMBOL}{discount_amount:>8.2f}")
-        receipt_lines.append(f"{'TOTAL:':<30} **{CURRENCY_SYMBOL}{final_total:>8.2f}**")
+        receipt_lines.append(f"{'TOTAL:':<30}{CURRENCY_SYMBOL}{final_total:>8.2f}")
         
         # Add payment details to receipt
-        receipt_lines.append("-" * 40)
+        receipt_lines.append("-" * 41)
         receipt_lines.append(f"{'Amount Paid:':<30}{CURRENCY_SYMBOL}{received_amount:>8.2f}")
         receipt_lines.append(f"{'Change Given:':<30}{CURRENCY_SYMBOL}{change_amount:>8.2f}")
         
-        receipt_lines.append("=" * 40)
-        receipt_lines.append("\nThank you for shopping!")
+        receipt_lines.append("=" * 41)
+        receipt_lines.append("Thank you for shopping! Come Again!")
+        # receipt_lines.append("\nThank you for shopping! Come Again!")
+        receipt_lines.append("=" * 41)
 
         try:
             with open(filepath, 'w') as f:
