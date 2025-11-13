@@ -221,6 +221,10 @@ class POSFrame(tk.Frame):
         # Scanning Area (Unit Items with Quantity Input)
         scan_area = tk.Frame(cart_frame, bg="white")
         scan_area.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
+
+        # tk.Label(scan_area, text="Product Name:", font=("Arial", 12), bg="white").pack(side="left", padx=(10,0))
+        # self.product_name_entry = ttk.Entry(scan_area, font=("Arial", 12), width=15)
+        # self.product_name_entry.pack(side="left", padx=5)
         
         tk.Label(scan_area, text="Scan Barcode:", font=("Arial", 12), bg="white").pack(side="left")
         self.barcode_entry = ttk.Entry(scan_area, font=("Arial", 12), width=15)
@@ -233,7 +237,6 @@ class POSFrame(tk.Frame):
         
         scan_button = ttk.Button(scan_area, text="Add Unit", command=self.scan_item)
         scan_button.pack(side="left", padx=5)
-        self.barcode_entry.bind("<Return>", self.scan_item) 
 
         # Weighted Item Area
         weight_area = tk.Frame(cart_frame, bg="white")
@@ -280,7 +283,8 @@ class POSFrame(tk.Frame):
         total_frame.pack(fill="x", padx=20, pady=20)
 
         # Currency change reflected here
-        self.subtotal_label = tk.Label(total_frame, text=f"Subtotal: {CURRENCY_SYMBOL}0.00", font=("Arial", 14), bg="#ecf0f1", anchor="e")
+        self.subtotal_label = tk.Label(total_frame, text=f"Subtotal:{CURRENCY_SYMBOL}0.00", font=("Arial", 14), bg="#ecf0f1", anchor="e")
+       
         self.subtotal_label.pack(fill="x", padx=10, pady=2)
         
         # Discount Input Area
@@ -330,39 +334,54 @@ class POSFrame(tk.Frame):
     def scan_item(self, event=None):
         """Adds unit-based items with a specified quantity to the cart."""
         barcode = self.barcode_entry.get()
-        if not barcode: return
+        if not barcode:
+            return
 
+        # Validate quantity
         try:
             quantity_to_add = int(self.unit_quantity_entry.get())
-            if quantity_to_add <= 0: raise ValueError
+            if quantity_to_add <= 0:
+                raise ValueError
         except ValueError:
             messagebox.showerror("Error", "Invalid quantity. Must be a positive whole number.")
-            self.barcode_entry.delete(0, 'end'); return
+            self.barcode_entry.delete(0, 'end')
+            return
 
+        # Check if product exists
         if barcode not in self.products:
-            messagebox.showerror("Error", "Product not found."); self.barcode_entry.delete(0, 'end'); return
-            
+            messagebox.showerror("Error", "Product not found.")
+            self.barcode_entry.delete(0, 'end')
+            return
+
         product = self.products[barcode]
         unit_price = product['price']
         current_stock = self.inventory.get(barcode, {}).get('quantity', 0)
         cart_qty = self.cart.get(barcode, {}).get('quantity', 0)
 
+        # Check stock availability
         if current_stock < (cart_qty + quantity_to_add):
-            messagebox.showerror("Error", f"Not enough '{product['name']}' in stock. Available: {current_stock - cart_qty:.0f} units.")
-            self.barcode_entry.delete(0, 'end'); return
-        
+            messagebox.showerror(
+                "Error",
+                f"Not enough '{product['name']}' in stock. Available: {current_stock - cart_qty:.0f} units."
+            )
+            self.barcode_entry.delete(0, 'end')
+            return
+
+        # Add or update item in cart
         if barcode in self.cart:
             self.cart[barcode]['quantity'] += float(quantity_to_add)
         else:
             self.cart[barcode] = {
-                'name': product['name'],
+                'name': product['name'],     # Product name stored here
                 'unit_price': unit_price,
                 'quantity': float(quantity_to_add),
                 'is_weighted': False
             }
-            
+
+        # Update line total
         self.cart[barcode]['line_total'] = self.cart[barcode]['unit_price'] * self.cart[barcode]['quantity']
 
+        # Update UI
         self.update_cart_display()
         self.update_total()
         self.barcode_entry.delete(0, 'end')
@@ -630,7 +649,6 @@ class POSFrame(tk.Frame):
 
 
 # --- Inventory Management Frame ---
-
 class InventoryFrame(tk.Frame):
     """A screen for adding, editing, and viewing product inventory."""
     def __init__(self, parent, controller):
@@ -645,21 +663,16 @@ class InventoryFrame(tk.Frame):
         nav_frame = tk.Frame(self, bg="#34495e")
         nav_frame.pack(side="top", fill="x")
         
-        # Shop Name is a static label
-        shop_name_frame = tk.Frame(nav_frame, bg="#34495e")
-        shop_name_frame.pack(side="left", padx=10, pady=5)
+        tk.Label(nav_frame, text="Inventory Management", font=("Arial", 16, "bold"),
+                 fg="white", bg="#34495e").pack(side="left", padx=10, pady=10)
         
-        # tk.Label(shop_name_frame, textvariable=self.controller.shop_name_var, 
-        #          font=("Arial", 12, "bold"), fg="#e0e0e0", bg="#34495e").pack(side="left", padx=5)
-        
-        # Original Title
-        tk.Label(nav_frame, text="Inventory Management", font=("Arial", 16, "bold"), fg="white", bg="#34495e").pack(side="left", padx=10, pady=10)
-        
-        # --- MODIFIED --- Added Analytics and History buttons
-        tk.Button(nav_frame, text="Bill Screen", font=("Arial", 10), command=lambda: self.controller.show_frame(POSFrame)).pack(side="right", padx=10, pady=10)
-        tk.Button(nav_frame, text="Bill History", font=("Arial", 10), command=lambda: self.controller.show_frame(BillHistoryFrame)).pack(side="right", padx=10, pady=10)
-        tk.Button(nav_frame, text="Sales Analytics", font=("Arial", 10), command=lambda: self.controller.show_frame(AnalyticsFrame)).pack(side="right", padx=10, pady=10)
-
+        # Navigation buttons
+        tk.Button(nav_frame, text="Bill Screen", font=("Arial", 10),
+                  command=lambda: self.controller.show_frame(POSFrame)).pack(side="right", padx=10, pady=10)
+        tk.Button(nav_frame, text="Bill History", font=("Arial", 10),
+                  command=lambda: self.controller.show_frame(BillHistoryFrame)).pack(side="right", padx=10, pady=10)
+        tk.Button(nav_frame, text="Sales Analytics", font=("Arial", 10),
+                  command=lambda: self.controller.show_frame(AnalyticsFrame)).pack(side="right", padx=10, pady=10)
 
         # --- Main Content Area ---
         main_frame = tk.Frame(self)
@@ -672,18 +685,25 @@ class InventoryFrame(tk.Frame):
         form_frame = tk.Frame(main_frame, bd=2, relief="groove")
         form_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         
-        tk.Label(form_frame, text="Product Details", font=("Arial", 14, "bold")).grid(row=0, column=0, columnspan=2, padx=10, pady=10)
+        tk.Label(form_frame, text="Product Details", font=("Arial", 14, "bold")).grid(
+            row=0, column=0, columnspan=2, padx=10, pady=10)
 
         # Labels
-        tk.Label(form_frame, text="Barcode:", font=("Arial", 12)).grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        tk.Label(form_frame, text="Product Name:", font=("Arial", 12)).grid(row=2, column=0, sticky="w", padx=10, pady=5)
-        # Currency change reflected here
-        tk.Label(form_frame, text=f"Price ({CURRENCY_SYMBOL}):", font=("Arial", 12)).grid(row=3, column=0, sticky="w", padx=10, pady=5)
-        tk.Label(form_frame, text="Quantity:", font=("Arial", 12)).grid(row=4, column=0, sticky="w", padx=10, pady=5)
+        tk.Label(form_frame, text="Barcode:", font=("Arial", 12)).grid(
+            row=1, column=0, sticky="w", padx=10, pady=5)
+        tk.Label(form_frame, text="Product Name:", font=("Arial", 12)).grid(
+            row=2, column=0, sticky="w", padx=10, pady=5)
+        tk.Label(form_frame, text=f"Price ({CURRENCY_SYMBOL}):", font=("Arial", 12)).grid(
+            row=3, column=0, sticky="w", padx=10, pady=5)
+        tk.Label(form_frame, text="Quantity:", font=("Arial", 12)).grid(
+            row=4, column=0, sticky="w", padx=10, pady=5)
         
         # Entries
         self.barcode_entry = ttk.Entry(form_frame, font=("Arial", 12))
         self.barcode_entry.grid(row=1, column=1, padx=10, pady=5)
+
+        # 🔹 Bind Enter key to auto-fill product details
+        self.barcode_entry.bind("<Return>", self.auto_fill_product_details)
         
         self.name_entry = ttk.Entry(form_frame, font=("Arial", 12))
         self.name_entry.grid(row=2, column=1, padx=10, pady=5)
@@ -695,17 +715,20 @@ class InventoryFrame(tk.Frame):
         self.quantity_entry.grid(row=4, column=1, padx=10, pady=5)
         
         # Note for weighted items
-        tk.Label(form_frame, text="For weighted items, start Barcode with 'W-'\n(Price is per kg, Quantity is total kg in stock).", 
+        tk.Label(form_frame, text="For weighted items, start Barcode with 'W-'\n"
+                                  "(Price is per kg, Quantity is total kg in stock).",
                  font=("Arial", 9, "italic")).grid(row=5, column=0, columnspan=2, padx=10, pady=10)
         
-        # Form Buttons
+        # Buttons
         button_frame = tk.Frame(form_frame)
         button_frame.grid(row=6, column=0, columnspan=2, pady=10)
         
-        ttk.Button(button_frame, text="Add/Update Product", command=self.add_update_product).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Delete Product", command=self.delete_product).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Clear Form", command=self.clear_form).pack(side="left", padx=5)
-
+        ttk.Button(button_frame, text="Add/Update Product",
+                   command=self.add_update_product).pack(side="left", padx=5)
+        ttk.Button(button_frame, text="Delete Product",
+                   command=self.delete_product).pack(side="left", padx=5)
+        ttk.Button(button_frame, text="Clear Form",
+                   command=self.clear_form).pack(side="left", padx=5)
 
         # --- Right Side (Inventory List) ---
         list_frame = tk.Frame(main_frame, bd=2, relief="groove")
@@ -713,7 +736,8 @@ class InventoryFrame(tk.Frame):
         list_frame.grid_rowconfigure(1, weight=1)
         list_frame.grid_columnconfigure(0, weight=1)
         
-        tk.Label(list_frame, text="Current Inventory (Sorted Low to High)", font=("Arial", 14, "bold")).grid(row=0, column=0, padx=10, pady=10)
+        tk.Label(list_frame, text="Current Inventory",
+                 font=("Arial", 14, "bold")).grid(row=0, column=0, padx=10, pady=10)
 
         self.inventory_list = tk.Listbox(list_frame, font=("Courier", 11))
         sb = tk.Scrollbar(list_frame, orient="vertical", command=self.inventory_list.yview)
@@ -723,90 +747,113 @@ class InventoryFrame(tk.Frame):
         sb.grid(row=1, column=1, sticky="ns", padx=(0,10), pady=10)
         
         self.inventory_list.bind('<<ListboxSelect>>', self.load_selected_product)
-        
+
+    # 🔹 Auto-fill function
+    def auto_fill_product_details(self, event=None):
+        """Auto-fills product name, price, and quantity when a barcode is entered or scanned."""
+        barcode = self.barcode_entry.get().strip()
+        if not barcode:
+            return
+
+        # Load data
+        self.products = load_data(PRODUCTS_DB)
+        self.inventory = load_data(INVENTORY_DB)
+
+        # Check if product exists
+        if barcode in self.products:
+            product = self.products[barcode]
+            inventory_item = self.inventory.get(barcode, {"quantity": 0})
+
+            # Fill details
+            self.name_entry.delete(0, 'end')
+            self.name_entry.insert(0, product.get('name', ''))
+
+            self.price_entry.delete(0, 'end')
+            self.price_entry.insert(0, str(product.get('price', '')))
+
+            self.quantity_entry.delete(0, 'end')
+            self.quantity_entry.insert(0, str(inventory_item.get('quantity', 0)))
+        else:
+            # Clear fields for new products
+            self.name_entry.delete(0, 'end')
+            self.price_entry.delete(0, 'end')
+            self.quantity_entry.delete(0, 'end')
+            messagebox.showinfo("New Product", "This barcode is not in the system. You can add a new product.")
+
     def refresh_data(self):
-        """
-        Loads data, prepares a list of inventory items, sorts them by quantity (low to high), 
-        and updates the listbox.
-        """
+        """Loads data, sorts by quantity, and updates listbox."""
         self.products = load_data(PRODUCTS_DB)
         self.inventory = load_data(INVENTORY_DB)
         
-        # 1. Prepare data for sorting
         inventory_items = []
         for barcode, product in self.products.items():
-            # Default to 0 if the item isn't tracked in inventory yet
             quantity = self.inventory.get(barcode, {}).get('quantity', 0)
             price = product.get('price', 0.0)
             name = product.get('name', 'N/A')
-            
-            # Store as (quantity, barcode, name, price)
             inventory_items.append((quantity, barcode, name, price))
 
-        # 2. Sort by quantity (index 0) from lowest to highest
         inventory_items.sort(key=lambda x: x[0]) 
 
-        # 3. Update Listbox
         self.inventory_list.delete(0, 'end')
-        
-        # Header - Currency change reflected here
         self.inventory_list.insert('end', f"{'Barcode':<15} {'Name':<30} {'Price (Rs.)':<10} {'Qty':<5}")
         self.inventory_list.insert('end', "-"*60)
         
         for quantity, barcode, name, price in inventory_items:
             list_string = f"{barcode:<15} {name:<30} {price:<10.2f} {quantity:<5}"
-            
             self.inventory_list.insert('end', list_string)
-            
-            # Highlight low stock items in red for better visibility
             if quantity < LOW_STOCK_THRESHOLD:
-                # Get index of the last inserted item
                 last_index = self.inventory_list.size() - 1
                 self.inventory_list.itemconfig(last_index, {'fg': 'red'})
 
-        
+    # 🔹 Updated add/update method (adds quantity to current stock)
     def add_update_product(self):
-        """Adds a new product or updates an existing one."""
-        barcode = self.barcode_entry.get()
-        name = self.name_entry.get()
+        """Adds a new product or updates an existing one (adds to current quantity if exists)."""
+        barcode = self.barcode_entry.get().strip()
+        name = self.name_entry.get().strip()
         try:
             price = float(self.price_entry.get())
-            quantity = float(self.quantity_entry.get()) 
+            quantity_to_add = float(self.quantity_entry.get())
         except ValueError:
-            messagebox.showerror("Error", "Price and Quantity must be numbers."); return
+            messagebox.showerror("Error", "Price and Quantity must be numbers.")
+            return
 
         if not barcode or not name:
-            messagebox.showerror("Error", "Barcode and Name are required."); return
+            messagebox.showerror("Error", "Barcode and Name are required.")
+            return
 
+        # Load existing quantities
+        current_quantity = self.inventory.get(barcode, {}).get("quantity", 0)
+        new_quantity = current_quantity + quantity_to_add
+
+        # Save/Update product info
         self.products[barcode] = {"name": name, "price": price}
-        self.inventory[barcode] = {"quantity": quantity}
+        self.inventory[barcode] = {"quantity": new_quantity}
         
         save_data(PRODUCTS_DB, self.products)
         save_data(INVENTORY_DB, self.inventory)
         
-        messagebox.showinfo("Success", f"Product '{name}' saved.")
+        messagebox.showinfo("Success", f"Product '{name}' updated. Total Quantity: {new_quantity}")
         self.clear_form()
         self.refresh_data()
         
-        # Manually trigger dot update on POS screen, in case inventory change was relevant
         self.controller.frames[POSFrame].update_low_stock_dot() 
 
     def load_selected_product(self, event=None):
         """Loads selected product data from the list into the form."""
         selected_indices = self.inventory_list.curselection()
-        if not selected_indices: return
+        if not selected_indices:
+            return
             
         selected_line = self.inventory_list.get(selected_indices[0])
-        
-        # Skip the header lines
         try:
-            if selected_indices[0] <= 1: return
-            # Extract barcode (first element in the fixed-width string)
+            if selected_indices[0] <= 1:
+                return
             barcode = selected_line.split()[0]
         except (IndexError, AttributeError):
             return 
         
-        if barcode not in self.products: return
+        if barcode not in self.products:
+            return
 
         product = self.products[barcode]
         inventory = self.inventory.get(barcode, {"quantity": 0})
@@ -821,15 +868,20 @@ class InventoryFrame(tk.Frame):
         """Deletes a product from the system."""
         barcode = self.barcode_entry.get()
         if not barcode:
-            messagebox.showerror("Error", "Load a product or enter a barcode to delete."); return
+            messagebox.showerror("Error", "Load a product or enter a barcode to delete.")
+            return
             
         if barcode not in self.products:
-            messagebox.showerror("Error", "Product not found."); return
+            messagebox.showerror("Error", "Product not found.")
+            return
 
-        if not messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete product {barcode}? This cannot be undone."): return
+        if not messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete product {barcode}? This cannot be undone."):
+            return
 
-        if barcode in self.products: del self.products[barcode]
-        if barcode in self.inventory: del self.inventory[barcode]
+        if barcode in self.products:
+            del self.products[barcode]
+        if barcode in self.inventory:
+            del self.inventory[barcode]
             
         save_data(PRODUCTS_DB, self.products)
         save_data(INVENTORY_DB, self.inventory)
@@ -837,8 +889,6 @@ class InventoryFrame(tk.Frame):
         messagebox.showinfo("Success", f"Product {barcode} deleted.")
         self.clear_form()
         self.refresh_data()
-        
-        # Manually trigger dot update on POS screen, in case inventory change was relevant
         self.controller.frames[POSFrame].update_low_stock_dot() 
 
     def clear_form(self):
